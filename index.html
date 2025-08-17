@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ESL Games — Listen • Match • Write</title>
+<style>
+  :root{
+    --bg:#f6f8ff; --ink:#0f172a; --muted:#5b647a; --accent:#2563eb;
+    --card:#ffffff; --soft:#e6e9f4; --ring:#bfd2ff; --ok:#16a34a; --bad:#dc2626;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(1200px 700px at 20% -10%, #eaf1ff, transparent 60%), #f6f8ff;color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1120px;margin:28px auto;padding:0 16px}
+
+  /* Header */
+  header.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(180deg,#ffffff,#f3f6ff);
+    border:1px solid var(--soft);border-radius:18px;padding:14px 16px;box-shadow:0 8px 28px rgba(41,72,163,.08)}
+  h1{margin:0;font-size:clamp(22px,3vw,30px)}
+  .pill{background:#eef4ff;border:1px solid #d9e5ff;color:#1e40af;border-radius:999px;padding:6px 12px;font-weight:800}
+  .toolbar{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{font-weight:800;font-size:13px;border:1px solid var(--soft);background:#fff;padding:6px 10px;border-radius:999px}
+  .badge.ok{color:#065f46;border-color:#a7f3d0;background:#ecfdf5}
+  .badge.warn{color:#92400e;border-color:#fcd34d;background:#fffbeb}
+
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap}
+  .tab{border:1px solid var(--soft);background:#fff;color:#111827;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;transition:all .15s}
+  .tab:hover{transform:translateY(-1px)}
+  .tab.active{background:#1e293b;color:#fff;border-color:#1e293b}
+
+  /* Sections */
+  .section{background:var(--card);border:1px solid var(--soft);border-radius:18px;box-shadow:0 10px 34px rgba(0,0,0,.06)}
+  .section header{padding:16px 18px;border-bottom:1px solid var(--soft)}
+  .section .content{padding:18px}
+  .note{color:var(--muted);font-size:14px;margin-top:6px}
+
+  /* Game 1: Listen */
+  .listen-list{display:grid;gap:12px}
+  .row{
+    display:grid;grid-template-columns:auto 1fr auto auto auto auto;gap:10px;align-items:center;
+    padding:12px;border:1px solid var(--soft);border-radius:14px;background:#fbfdff;transition:box-shadow .15s
+  }
+  .row:hover{box-shadow:0 8px 20px rgba(47,72,150,.08)}
+  .num{width:40px;height:40px;border-radius:10px;background:#eef4ff;border:1px solid #dbe6ff;display:grid;place-items:center;font-weight:900;color:#274acb}
+  input[type="text"]{width:100%;padding:12px;border:1px solid var(--soft);border-radius:12px;font-size:16px;background:#fff;color:var(--ink);outline:none}
+  input[type="text"]:focus{border-color:#7aa8ff;box-shadow:0 0 0 5px var(--ring)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  button{border:0;border-radius:12px;padding:10px 14px;font-weight:800;background:var(--accent);color:#fff;cursor:pointer}
+  button.secondary{background:#f3f6ff;color:#1e293b;border:1px solid var(--soft)}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .tag{font-size:12px;background:#eef2f7;color:#334155;border-radius:999px;padding:4px 8px;border:1px solid var(--soft)}
+  .mark{min-width:24px;text-align:center;font-weight:900}
+  .mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+  .ok{border-color:#bbf7d0;background:#f0fdf4}
+  .bad{border-color:#fecaca;background:#fef2f2}
+
+  /* Game 2: Match */
+  .viewer{display:grid;gap:14px}
+  .stage{border:1px dashed #d9e1f3;border-radius:16px;background:#ffffff}
+  .imgbox{aspect-ratio:4/3;display:grid;place-items:center;position:relative;overflow:hidden}
+  .imgbox img{max-width:100%;max-height:100%;object-fit:contain}
+  .missing{position:absolute;inset:0;display:grid;place-items:center;color:#b91c1c;font-weight:800;background:repeating-linear-gradient(45deg,#fee2e2,#fee2e2 12px,#fff 12px,#fff 24px);text-align:center;padding:10px}
+  .nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
+  .nav .left,.nav .right{display:flex;gap:8px;align-items:center}
+  .wordlist{font-size:14px;color:#111827;background:#fff;border:1px solid var(--soft);border-radius:12px;padding:10px}
+  .dots{display:flex;gap:6px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1}
+  .dot.active{background:#1e293b}
+  .under{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+  .small{max-width:110px;text-align:center}
+  .feedback{font-weight:800}
+
+  /* Game 3: Write */
+  .free{display:grid;gap:10px}
+  .free .line{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:10px;border:1px solid var(--soft);border-radius:12px;background:#fbfdff}
+
+  /* Teacher tools */
+  details.teacher{margin-top:16px}
+  details.teacher summary{cursor:pointer;font-weight:800;color:#1e293b}
+  .teacher-box{margin-top:8px;background:#fff;border:1px dashed var(--soft);border-radius:12px;padding:10px;display:flex;gap:8px;flex-wrap:wrap}
+
+  /* Confetti canvas */
+  #confettiCanvas{position:fixed;inset:0;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="wrap">
+  <header class="top">
+    <h1>ESL Games</h1>
+    <span class="pill">Beginner</span>
+    <div class="toolbar">
+      <span id="badgeListen" class="badge">Game 1: —</span>
+      <span id="badgeMatch" class="badge">Game 2: —</span>
+      <span id="badgeTotal" class="badge warn">Total: —</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="listen">Game 1 • Listen & type</button>
+    <button class="tab" data-tab="match">Game 2 • Match the picture</button>
+    <button class="tab" data-tab="write">Game 3 • Your words</button>
+  </div>
+
+  <!-- GAME 1 -->
+  <section class="section" id="sec-listen">
+    <header>
+      <strong>Type the word you hear.</strong>
+      <div class="note">Max 3 plays per item: Play → Repeat → Last try.</div>
+    </header>
+    <div class="content">
+      <div id="listenList" class="listen-list"></div>
+      <div class="note" id="listenScore"></div>
+    </div>
+  </section>
+
+  <!-- GAME 2 -->
+  <section class="section" id="sec-match" style="margin-top:16px; display:none">
+    <header>
+      <strong>Match the picture. Type the number from the word list.</strong>
+      <div class="note">Images in the same folder: classroom.png, computer.png, bus.png, book.png, write.png, listen.png, pencil.png, australia.png, rubber.png, read.png, phone.png</div>
+    </header>
+    <div class="content">
+      <div class="viewer">
+        <div class="stage">
+          <div class="imgbox">
+            <img id="pic" alt="" />
+            <div id="imgMissing" class="missing" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="nav">
+          <div class="left">
+            <button class="secondary" id="prev">⟨ Back</button>
+            <button class="secondary" id="next">Next ⟩</button>
+            <button class="secondary" id="checkThis">Check this image</button>
+            <div class="dots" id="dots"></div>
+          </div>
+          <div class="right note">
+            <span>Image <span id="idxNow">1</span>/<span id="idxTotal">11</span></span>
+          </div>
+        </div>
+
+        <div class="under">
+          <div class="wordlist">
+            <div><strong>Word list (numbers):</strong></div>
+            <ol style="margin:6px 0 0 18px">
+              <li>classroom</li><li>computer</li><li>bus</li><li>book</li><li>write</li>
+              <li>listen</li><li>pencil</li><li>Australia</li><li>rubber</li><li>read</li><li>phone</li>
+            </ol>
+          </div>
+          <div>
+            <label class="note">Enter the number for this picture:</label><br/>
+            <input id="answerBox" class="small" type="text" inputmode="numeric" pattern="\d*" placeholder="number" />
+            <span id="matchFeedback" class="note feedback"></span>
+          </div>
+        </div>
+      </div>
+      <div class="note" id="matchScore" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- GAME 3 -->
+  <section class="section" id="sec-write" style="margin-top:16px; display:none">
+    <header>
+      <strong>Your words</strong>
+      <div class="note">Write 4 classroom words, your first name, last name, suburb, and 2 more words you know.</div>
+    </header>
+    <div class="content">
+      <div id="freeList" class="free"></div>
+    </div>
+  </section>
+
+  <!-- Teacher tools (hidden at bottom) -->
+  <details class="teacher">
+    <summary>Teacher tools</summary>
+    <div class="teacher-box">
+      <button class="secondary" id="btn-check-all">Check all</button>
+      <button class="secondary" id="btn-reveal">Reveal answers</button>
+      <button class="secondary" id="btn-reset">Reset & reshuffle</button>
+    </div>
+  </details>
+</div>
+
+<script>
+/* ---------------------------------
+   Data (fixed numbers 1–11)
+----------------------------------*/
+const LISTEN_ITEMS_BASE = [
+  { n:1, word:"dog" },
+  { n:2, word:"phone" },
+  { n:3, word:"lunch" },
+  { n:4, word:"class" },
+  { n:5, word:"blue" },
+  { n:6, word:"eat" },
+  { n:7, word:"walk" },
+  { n:8, word:"Adelaide" },
+  { n:9, word:"English" },
+  { n:10, word:"school" },
+  { n:11, word:"pencil" }
+];
+
+const MATCH_ITEMS_BASE = [
+  { img:"classroom.png", title:"classroom", correct:1 },
+  { img:"computer.png", title:"computer", correct:2 },
+  { img:"bus.png", title:"bus", correct:3 },
+  { img:"book.png", title:"book", correct:4 },
+  { img:"write.png", title:"write", correct:5 },
+  { img:"listen.png", title:"listen", correct:6 },
+  { img:"pencil.png", title:"pencil", correct:7 },
+  { img:"australia.png", title:"Australia", correct:8 },
+  { img:"rubber.png", title:"rubber", correct:9 },
+  { img:"read.png", title:"read", correct:10 },
+  { img:"phone.png", title:"phone", correct:11 }
+];
+
+/* ---------------------------------
+   State (shuffled copies)
+----------------------------------*/
+let LISTEN_ITEMS = [];
+let MATCH_ITEMS = [];
+let listenRows = [];
+let idx = 0; // current image index
+const answers = new Map(); // image index -> number text
+
+/* ---------------------------------
+   Helpers
+----------------------------------*/
+const $ = id => document.getElementById(id);
+const norm = s => (s||"").trim().toLowerCase();
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function focusInput(el){ el?.focus(); el?.select?.(); el?.closest?.('.row')?.scrollIntoView({behavior:'smooth', block:'center'}); }
+function preferredVoice(){
+  const list = window.speechSynthesis?.getVoices?.() || [];
+  return list.find(v=>/en-AU/i.test(v.lang)) || list.find(v=>/en-/i.test(v.lang)) || list[0] || null;
+}
+
+/* ---------------------------------
+   Confetti
+----------------------------------*/
+const confetti = (() => {
+  const cvs = $('confettiCanvas'), ctx = cvs.getContext('2d');
+  let W=0,H=0, pieces=[], raf=null, endAt=0;
+  function resize(){ W=window.innerWidth; H=window.innerHeight; cvs.width=W; cvs.height=H; }
+  window.addEventListener('resize', resize); resize();
+  function burst(x=W/2,y=H/3,count=120){
+    const colors=['#7c3aed','#2563eb','#10b981','#f59e0b','#ef4444','#06b6d4','#111827','#000','#fff'];
+    for(let i=0;i<count;i++){
+      pieces.push({x,y,vx:(Math.random()*2-1)*6,vy:(Math.random()*-2-2)*6,g:.18+Math.random()*.12,s:2+Math.random()*4,r:Math.random()*Math.PI,vr:(Math.random()*.2-.1),c:colors[i%colors.length],a:1});
+    }
+    if(!raf){ endAt=performance.now()+1200; raf=requestAnimationFrame(loop); } else { endAt=Math.max(endAt,performance.now()+1200); }
+  }
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    pieces.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.a-=.007;
+      ctx.globalAlpha=Math.max(0,p.a); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s,p.s*2,p.s*2); ctx.restore(); ctx.globalAlpha=1; });
+    pieces = pieces.filter(p=>p.a>0 && p.y<H+50);
+    if(performance.now()<endAt || pieces.length>0) raf=requestAnimationFrame(loop);
+    else{ cancelAnimationFrame(raf); raf=null; }
+  }
+  return {burst};
+})();
+
+/* ---------------------------------
+   Tabs
+----------------------------------*/
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.section').forEach(s=>s.style.display='none');
+    if(tab==='listen') $('sec-listen').style.display='';
+    if(tab==='match') $('sec-match').style.display='';
+    if(tab==='write') $('sec-write').style.display='';
+  });
+});
+
+/* ---------------------------------
+   Game 1: Listen & type
+   - Only first item says "All letters must be in lower case."
+   - "Adelaide" says "First letter must be capital."
+   - Each item: Play/Repeat/Last try (3 max), then Check
+----------------------------------*/
+function speakLettersThenWord(word, opts){
+  const {preface=null, onEnd=null, rateLetter=0.8, rateWord=0.95} = opts || {};
+  if(!('speechSynthesis' in window)){ alert('Speech not supported in this browser.'); return; }
+  const voice = preferredVoice();
+  const make = (text, rate)=>{ const u=new SpeechSynthesisUtterance(text); if(voice) u.voice=voice; u.rate=rate; return u; };
+  const queue = [];
+  window.speechSynthesis.cancel();
+
+  if (preface){ queue.push(make(preface, 0.95)); }
+
+  const letters = [...String(word).toLowerCase()].filter(ch=>/[a-z]/.test(ch));
+  letters.forEach(ch=> queue.push(make(ch, rateLetter)));
+
+  const w = make(word, rateWord);
+  w.onend = ()=> onEnd && onEnd();
+  queue.push(w);
+
+  queue.forEach(u=>speechSynthesis.speak(u));
+}
+
+function renderListen(){
+  const box = $('listenList'); box.innerHTML = ''; listenRows = [];
+  LISTEN_ITEMS.forEach((it, idx)=>{
+    const row = document.createElement('div');
+    row.className='row';
+    row.dataset.answer = it.word.toLowerCase();
+    row.dataset.attempts='0';
+
+    const num=document.createElement('div'); num.className='num'; num.textContent=String(idx+1);
+
+    const input=document.createElement('input'); input.type='text'; input.placeholder='Type the word here';
+
+    const controls=document.createElement('div'); controls.className='controls';
+
+    const btnPlay=document.createElement('button'); btnPlay.textContent='🔊 Play';
+    btnPlay.addEventListener('click', ()=>{
+      let tries=Number(row.dataset.attempts); if(tries>=3) return;
+      tries++; row.dataset.attempts=String(tries); updateTag();
+      const preface = (idx===0) ? 'All letters must be in lower case.' : (it.word==='Adelaide' ? 'First letter must be capital.' : null);
+      speakLettersThenWord(it.word, {preface, onEnd:()=>{
+        if(tries>=3){ btnPlay.disabled=true; btnRepeat.disabled=true; btnLast.disabled=true; }
+        focusInput(input);
+      }});
+    });
+
+    const btnRepeat=document.createElement('button'); btnRepeat.textContent='Repeat'; btnRepeat.className='secondary';
+    btnRepeat.addEventListener('click', ()=>{
+      let tries=Number(row.dataset.attempts); if(tries>=2) return;
+      tries++; row.dataset.attempts=String(tries); updateTag();
+      const preface = null; // only first or Adelaide gets preface via Play flow
+      speakLettersThenWord(it.word, {preface});
+    });
+
+    const btnLast=document.createElement('button'); btnLast.textContent='Last try'; btnLast.className='secondary';
+    btnLast.addEventListener('click', ()=>{
+      let tries=Number(row.dataset.attempts); if(tries>=2){
+        tries++; row.dataset.attempts=String(tries); updateTag();
+        speakLettersThenWord(it.word, {preface:null, onEnd:()=>{ btnPlay.disabled=true; btnRepeat.disabled=true; btnLast.disabled=true; focusInput(input); }});
+      }
+    });
+
+    const btnCheck=document.createElement('button'); btnCheck.textContent='Check'; btnCheck.className='secondary';
+    const mark=document.createElement('div'); mark.className='mark';
+    btnCheck.addEventListener('click', ()=>{
+      const ok = norm(input.value) === row.dataset.answer;
+      row.classList.remove('ok','bad'); row.classList.add(ok?'ok':'bad');
+      mark.textContent = ok ? '✓' : '✗'; mark.className='mark '+(ok?'ok':'bad');
+      if(ok){ const r=row.getBoundingClientRect(); confetti.burst(r.left+120, r.top+window.scrollY+10, 90); }
+      updateListenScore();
+    });
+
+    const tag=document.createElement('span'); tag.className='tag';
+    function updateTag(){ const left = Math.max(0, 3-Number(row.dataset.attempts)); tag.textContent=`Attempts left: ${left}`; }
+    updateTag();
+
+    controls.appendChild(btnPlay); controls.appendChild(btnRepeat); controls.appendChild(btnLast); controls.appendChild(tag);
+
+    row.appendChild(num);
+    row.appendChild(input);
+    row.appendChild(controls);
+    row.appendChild(btnCheck);
+    row.appendChild(mark);
+    box.appendChild(row);
+
+    listenRows.push(row);
+  });
+
+  setTimeout(()=> focusInput(listenRows[0]?.querySelector('input')), 150);
+}
+
+function listenScore(){
+  let score=0,total=listenRows.length;
+  listenRows.forEach(r=>{ if(norm(r.querySelector('input').value)===r.dataset.answer) score++; });
+  return {score,total};
+}
+function updateListenScore(){
+  const {score,total}=listenScore();
+  $('listenScore').textContent=`Game 1 score: ${score} / ${total}`;
+  $('badgeListen').textContent=`Game 1: ${score}/${total}`;
+  $('badgeListen').className='badge ' + (score===total?'ok':'');
+  updateTotalBadge();
+}
+function revealListen(){
+  listenRows.forEach(r=>{
+    r.querySelector('input').value=r.dataset.answer;
+    r.classList.remove('bad'); r.classList.add('ok');
+    const m=r.querySelector('.mark'); m.textContent='✓'; m.className='mark ok';
+  });
+  updateListenScore();
+}
+
+/* ---------------------------------
+   Game 2: Match viewer
+----------------------------------*/
+function preloadImages(){ MATCH_ITEMS.forEach(m=>{ const i=new Image(); i.src=m.img; }); }
+function renderDots(){ const d=$('dots'); d.innerHTML=''; MATCH_ITEMS.forEach((_,i)=>{ const dot=document.createElement('div'); dot.className='dot'+(i===idx?' active':''); d.appendChild(dot); }); }
+function showImage(){
+  const item=MATCH_ITEMS[idx]; const img=$('pic'), miss=$('imgMissing');
+  img.src=item.img; img.alt=item.title; $('idxNow').textContent=String(idx+1); $('idxTotal').textContent=String(MATCH_ITEMS.length); renderDots();
+  $('answerBox').value = answers.get(idx) || ''; $('matchFeedback').textContent='';
+  img.onload=()=>{ miss.style.display='none'; }; img.onerror=()=>{ miss.style.display='grid'; miss.textContent=`image not found: ${item.img}`; };
+}
+function next(){ idx=(idx+1)%MATCH_ITEMS.length; showImage(); }
+function prev(){ idx=(idx-1+MATCH_ITEMS.length)%MATCH_ITEMS.length; showImage(); }
+function matchScore(){ let s=0,t=MATCH_ITEMS.length; MATCH_ITEMS.forEach((m,i)=>{ if(Number(answers.get(i))===m.correct) s++; }); return {score:s,total:t}; }
+function updateMatchScore(){
+  const {score,total}=matchScore();
+  $('matchScore').textContent=`Game 2 score: ${score} / ${total}`;
+  $('badgeMatch').textContent=`Game 2: ${score}/${total}`;
+  $('badgeMatch').className='badge ' + (score===total?'ok':'');
+  updateTotalBadge();
+}
+function revealMatch(){ MATCH_ITEMS.forEach((m,i)=>answers.set(i,String(m.correct))); showImage(); updateMatchScore(); }
+
+$('checkThis').addEventListener('click', ()=>{
+  const m=MATCH_ITEMS[idx];
+  const val = Number(($('answerBox').value||'').trim());
+  if(!val){ $('matchFeedback').textContent='Enter a number 1–11.'; $('matchFeedback').style.color='#92400e'; return; }
+  answers.set(idx,String(val));
+  if(val===m.correct){
+    $('matchFeedback').textContent='✓ Correct'; $('matchFeedback').style.color='#16a34a';
+    const rect=$('pic').getBoundingClientRect(); confetti.burst(rect.left+rect.width/2, rect.top+window.scrollY+rect.height/3, 120);
+  }else{
+    $('matchFeedback').textContent='✗ Try again'; $('matchFeedback').style.color='#dc2626';
+  }
+  updateMatchScore();
+});
+
+$('prev').addEventListener('click', prev);
+$('next').addEventListener('click', next);
+$('answerBox').addEventListener('input', e=>{ answers.set(idx,e.target.value.trim()); $('matchFeedback').textContent=''; });
+
+/* ---------------------------------
+   Game 3: Write
+----------------------------------*/
+const FREE_LINES = [
+  "(example) b u s",
+  "Word in your classroom",
+  "Word in your classroom",
+  "Word in your classroom",
+  "Word in your classroom",
+  "Your first name",
+  "Your last name",
+  "Your suburb",
+  "Word you know",
+  "Word you know",
+  "Extra word (optional)"
+];
+function renderFree(){
+  const box=$('freeList'); box.innerHTML='';
+  FREE_LINES.forEach((ph,i)=>{
+    const line=document.createElement('div'); line.className='line';
+    const n=document.createElement('div'); n.className='num'; n.textContent=String(i+1);
+    const inp=document.createElement('input'); inp.type='text'; inp.placeholder=ph; if(i===0) inp.value='b u s';
+    line.appendChild(n); line.appendChild(inp); box.appendChild(line);
+  });
+}
+
+/* ---------------------------------
+   Badges / teacher tools
+----------------------------------*/
+function updateTotalBadge(){
+  const a=listenScore(); const b=matchScore();
+  const total=a.total+b.total, score=a.score+b.score;
+  $('badgeTotal').textContent=`Total: ${score}/${total}`;
+  $('badgeTotal').className='badge ' + (score===total?'ok':'warn');
+}
+$('btn-check-all')?.addEventListener('click', ()=>{ updateListenScore(); updateMatchScore(); });
+$('btn-reveal')?.addEventListener('click', ()=>{ revealListen(); revealMatch(); });
+$('btn-reset')?.addEventListener('click', ()=>{ initAll(true); $('listenScore').textContent=''; $('matchScore').textContent='';
+  $('badgeListen').textContent='Game 1: —'; $('badgeListen').className='badge';
+  $('badgeMatch').textContent='Game 2: —'; $('badgeMatch').className='badge';
+  $('badgeTotal').textContent='Total: —'; $('badgeTotal').className='badge warn';
+});
+
+/* ---------------------------------
+   Init
+----------------------------------*/
+function preloadImages(){ MATCH_ITEMS.forEach(m=>{ const i=new Image(); i.src=m.img; }); }
+function initSpeech(){ if(typeof speechSynthesis==='undefined') return; if(speechSynthesis.getVoices().length===0){ speechSynthesis.addEventListener('voiceschanged', ()=>{}); } }
+function initAll(reshuffle){
+  LISTEN_ITEMS = shuffle(LISTEN_ITEMS_BASE);
+  MATCH_ITEMS  = shuffle(MATCH_ITEMS_BASE);
+  renderListen();
+  preloadImages();
+  idx=0; answers.clear(); showImage();
+  renderFree();
+}
+document.addEventListener('DOMContentLoaded', ()=>{ initSpeech(); initAll(true); });
+</script>
+</body>
+</html>
