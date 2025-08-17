@@ -78,7 +78,7 @@
   .free{display:grid;gap:10px}
   .free .line{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:10px;border:1px solid var(--soft);border-radius:12px;background:#fbfdff}
 
-  /* Game 4: Lowercase Hunt (letters only) */
+  /* Game 4: Lowercase Hunt */
   .hunt-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
   @media (max-width:700px){ .hunt-grid{grid-template-columns:repeat(3,1fr);} }
   .tile{
@@ -96,7 +96,7 @@
   details.teacher summary{cursor:pointer;font-weight:800;color:#1e293b}
   .teacher-box{margin-top:8px;background:#fff;border:1px dashed var(--soft);border-radius:12px;padding:10px;display:flex;gap:8px;flex-wrap:wrap}
 
-  /* Confetti canvas (kept BEHIND UI and click-through) */
+  /* Confetti canvas — always behind UI and click-through */
   #confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:0}
 </style>
 </head>
@@ -164,7 +164,7 @@
 
         <div class="under">
           <div class="wordlist">
-            <div><strong>Word list (numbers):</strong></div>
+            <div><strong>Word list (numbers 1–11):</strong></div>
             <ul id="wordListUL" style="list-style:none;margin:6px 0 0;padding:0;"></ul>
           </div>
           <div>
@@ -182,7 +182,7 @@
   <section class="section" id="sec-write" style="margin-top:16px; display:none">
     <header>
       <strong>Your words</strong>
-      <div class="note">Write 4 classroom words, your first name, last name, city, address, phone number, and 2 more words you know.</div>
+      <div class="note">Write 4 classroom words, your first name, last name, city, suburb, address, phone number, and 2 more words you know.</div>
     </header>
     <div class="content">
       <div id="freeList" class="free"></div>
@@ -193,7 +193,7 @@
   <section class="section" id="sec-hunt" style="margin-top:16px; display:none">
     <header>
       <strong>Lowercase Hunt</strong>
-      <div class="note">Select all the <em>lowercase</em> letters (s or p). Deselect uppercase (S or P).</div>
+      <div class="note">From A–Z letters (mixed case), select only the <em>lowercase</em> ones.</div>
     </header>
     <div class="content">
       <div id="huntGrid" class="hunt-grid"></div>
@@ -294,7 +294,7 @@ $('bigUI').addEventListener('change', e=>{
   document.documentElement.style.setProperty('--scale', e.target.checked ? '1.2' : '1');
 });
 
-/* -------------------- SPEECH (letters then word) -------------------- */
+/* -------------------- SPEECH -------------------- */
 function speakLettersThenWord(word, {preface=null, onEnd=null}={}){
   if(!('speechSynthesis' in window)){ alert('Speech not supported in this browser.'); return; }
   const voice = preferredVoice();
@@ -304,11 +304,9 @@ function speakLettersThenWord(word, {preface=null, onEnd=null}={}){
 
   if (preface){ queue.push(make(preface, 0.95)); }
 
-  // letters (strict A–Z only, lowercased, slower for clarity)
   const letters = [...String(word).toLowerCase()].filter(ch=>/[a-z]/.test(ch));
   letters.forEach(ch=> queue.push(make(ch, 0.7)));
 
-  // final whole word
   const final = make(word, 0.92);
   final.onend = ()=> onEnd && onEnd();
   queue.push(final);
@@ -383,10 +381,9 @@ function updateListenScore(){ const {score,total}=listenScore(); $('listenScore'
 function revealListen(){ listenRows.forEach(r=>{ r.querySelector('input').value=r.dataset.answer; r.classList.add('ok'); r.classList.remove('bad'); r.querySelector('.mark').textContent='✓'; r.querySelector('.mark').className='mark ok'; }); updateListenScore(); }
 
 /* -------------------- GAME 2 -------------------- */
-function renderWordListShuffled(){
+function renderWordListCanonical(){
   const ul = $('wordListUL'); ul.innerHTML='';
-  const shuffled = shuffle(MATCH_ITEMS_BASE);
-  shuffled.forEach(item=>{
+  MATCH_ITEMS_BASE.forEach(item=>{
     const li = document.createElement('li');
     li.innerHTML = `<span class="badgeNo">${item.correct}</span>${item.title}`;
     ul.appendChild(li);
@@ -431,6 +428,7 @@ const FREE_LINES = [
   "Your first name",
   "Your last name",
   "Your city",
+  "Your suburb",
   "Your address",
   "Your phone number",
   "Word you know",
@@ -446,12 +444,13 @@ function renderFree(){
   });
 }
 
-/* -------------------- GAME 4 (letters only: s,S,p,P) -------------------- */
+/* -------------------- GAME 4 — letters A–Z (mixed case) -------------------- */
 function newHuntLetters(){
-  const pool = ['s','S','p','P'];
-  HUNT_LETTERS = Array.from({length:20}, ()=> {
-    const t = pool[Math.floor(Math.random()*pool.length)];
-    return {text:t, isLower:(t===t.toLowerCase()), selected:false};
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+  HUNT_LETTERS = Array.from({length:20}, ()=>{
+    const ch = alphabet[Math.floor(Math.random()*26)];
+    const lower = Math.random() < 0.5;
+    return {text: lower ? ch : ch.toUpperCase(), isLower: lower, selected:false};
   });
 }
 function renderHunt(){
@@ -496,7 +495,7 @@ function updateTotalBadge(){
 }
 $('btn-check-all')?.addEventListener('click', ()=>{ updateListenScore(); updateMatchScore(); updateHuntBadges(true); });
 $('btn-reveal')?.addEventListener('click', ()=>{ revealListen(); revealMatch(); HUNT_LETTERS.forEach(w=> w.selected = w.isLower); renderHunt(); updateHuntBadges(true); });
-$('btn-reset')?.addEventListener('click', ()=>{ initAll(true);
+$('btn-reset')?.addEventListener('click', ()=>{ initAll();
   $('listenScore').textContent=''; $('matchScore').textContent=''; $('huntScore').textContent='';
   $('badgeListen').textContent='Game 1: —'; $('badgeListen').className='badge';
   $('badgeMatch').textContent='Game 2: —'; $('badgeMatch').className='badge';
@@ -505,15 +504,15 @@ $('btn-reset')?.addEventListener('click', ()=>{ initAll(true);
 });
 
 /* -------------------- INIT -------------------- */
-function renderWordListShuffled(){ const ul=$('wordListUL'); ul.innerHTML=''; const shuffled=shuffle(MATCH_ITEMS_BASE); shuffled.forEach(item=>{ const li=document.createElement('li'); li.innerHTML=`<span class="badgeNo">${item.correct}</span>${item.title}`; ul.appendChild(li); }); }
+function renderWordListCanonical(){ const ul=$('wordListUL'); ul.innerHTML=''; MATCH_ITEMS_BASE.forEach(item=>{ const li=document.createElement('li'); li.innerHTML=`<span class="badgeNo">${item.correct}</span>${item.title}`; ul.appendChild(li); }); }
 function showImage(){ const item=MATCH_ITEMS[idx]; const img=$('pic'), miss=$('imgMissing'); img.src=item.img; img.alt=item.title; $('idxNow').textContent=String(idx+1); $('idxTotal').textContent=String(MATCH_ITEMS.length); renderDots(); $('answerBox').value=answers.get(idx)||''; $('matchFeedback').textContent=''; img.onload=()=>{miss.style.display='none'}; img.onerror=()=>{miss.style.display='grid'; miss.textContent=`image not found: ${item.img}`}; }
 function renderDots(){ const d=$('dots'); d.innerHTML=''; MATCH_ITEMS.forEach((_,i)=>{ const dot=document.createElement('div'); dot.className='dot'+(i===idx?' active':''); d.appendChild(dot); }); }
 
 function initAll(){
-  LISTEN_ITEMS = shuffle(LISTEN_ITEMS_BASE);
-  MATCH_ITEMS  = shuffle(MATCH_ITEMS_BASE);
+  LISTEN_ITEMS = shuffle(LISTEN_ITEMS_BASE); // 15 shuffled words
+  MATCH_ITEMS  = shuffle(MATCH_ITEMS_BASE);  // images shuffled
   renderListen();
-  renderWordListShuffled();
+  renderWordListCanonical();                 // ⬅️ fixed numbering 1–11 in order
   idx=0; answers.clear(); showImage();
   renderFree();
   newHuntLetters(); renderHunt(); updateHuntBadges(false);
